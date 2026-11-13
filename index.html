@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>영덕 나우 | QR로 만나는 실시간 영덕 관광 & 코스 지도</title>
+  <meta name="description" content="앱 설치 없이 QR로 바로 보는 영덕 실시간 여행 코스 지도, 이색 체험, 타보게 관광택시">
+  <meta name="theme-color" content="#005BAC">
+
+  <!-- Pretendard Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+  <!-- Leaflet Map CSS (인터랙티브 오픈소스 지도) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Desktop View Wrapper (PC에서도 스마트폰 화면처럼 보이도록 지원) -->
+  <div class="desktop-background">
+    <div class="desktop-info">
+      <span class="desktop-tag">📱 전 연령층 최적화 모바일 웹</span>
+      <p class="desktop-desc">스마트폰 카메라로 QR을 스캔했을 때 즉시 열리는 실제 화면입니다. (앱 설치 불필요)</p>
+      
+      <!-- Desktop Interactive QR Badge -->
+      <div class="desktop-qr-preview" id="desktopQrPreview">
+        <img src="yeongdeok_qr.svg" alt="영덕 나우 접속 QR" class="desktop-qr-img">
+        <div class="desktop-qr-caption">
+          <strong>스마트폰 카메라로 지금 스캔!</strong>
+          <small>모바일 화면으로 즉시 연결됩니다</small>
+          <a href="yeongdeok_qr_poster.html" target="_blank" class="link-qr-poster">📄 인쇄용 안내판 포스터 보기 ➔</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Device Container (최대 480px) -->
+    <main class="app-container">
+
+      <!-- ==============================================
+           [섹션 1] 상단 헤더 & 현재 위치 배지
+           ============================================== -->
+      <header class="app-header">
+        <div class="header-top">
+          <div class="logo-area">
+            <div class="logo-icon">
+              <!-- Crab & Sea Wave Badge SVG -->
+              <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="16" fill="#005BAC"/>
+                <path d="M8 20C10 18 12 18 14 20C16 22 18 22 20 20C22 18 24 18 26 20" stroke="#00A896" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M11 14C11 11.2386 13.2386 9 16 9C18.7614 9 21 11.2386 21 14V16H11V14Z" fill="#FF6B4A"/>
+                <circle cx="13.5" cy="12.5" r="1.5" fill="#FFFFFF"/>
+                <circle cx="18.5" cy="12.5" r="1.5" fill="#FFFFFF"/>
+                <path d="M9 13L6 11M23 13L26 11" stroke="#FF6B4A" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="logo-text">
+              <h1 class="brand-title">영덕 나우</h1>
+              <p class="brand-subtitle">YEONGDEOK NOW · 한눈에 보는 코스 지도</p>
+            </div>
+          </div>
+          <button type="button" class="btn-share" id="btnShare" aria-label="공유하기" title="공유하기">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Location Badge & Quick Notice -->
+        <div class="location-banner">
+          <div class="location-label">
+            <span class="pulse-dot"></span>
+            <span class="loc-text">스캔 위치 인식:</span>
+          </div>
+          <div class="location-select-wrap">
+            <select id="locationSelect" aria-label="현재 위치 변경">
+              <option value="ganggu" selected>📍 강구항 · 해파랑공원 (대게거리)</option>
+              <option value="yeonghae">📍 영해면 · 메타세콰이어 / 사계플라워팜</option>
+              <option value="chuksan">📍 축산면 · 퐁당자무질 해녀체험</option>
+              <option value="goraebul">📍 고래불 · 병곡면 (국민야영장)</option>
+            </select>
+            <span class="select-arrow">▼</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content Body -->
+      <div class="app-body">
+
+        <!-- ==============================================
+             [섹션 2] 인터랙티브 영덕 추천 코스 지도
+             ============================================== -->
+        <section class="section map-section">
+          <div class="section-header">
+            <div class="title-with-badge">
+              <span class="badge-map">🗺️ 실시간 코스 지도</span>
+              <h2 class="section-title">영덕 한눈에 보는 추천 코스</h2>
+            </div>
+            <p class="section-subtitle">지도 위의 번호 핀이나 경로를 터치하면 해당 명소로 바로 이동합니다.</p>
+          </div>
+
+          <!-- Course Route Selector Tabs -->
+          <div class="course-route-tabs" role="tablist">
+            <button type="button" class="route-tab active" data-route="courseA">
+              <span class="route-icon">🌸</span>
+              <div class="route-info">
+                <strong>1코스 힐링체험</strong>
+                <small>대게 ➔ 플라워팜 ➔ 숲 ➔ 모노레일</small>
+              </div>
+            </button>
+            <button type="button" class="route-tab" data-route="courseB">
+              <span class="route-icon">🤿</span>
+              <div class="route-info">
+                <strong>2코스 이색액티비티</strong>
+                <small>대게 ➔ 별파랑 짚라인 ➔ 퐁당자무질</small>
+              </div>
+            </button>
+            <button type="button" class="route-tab" data-route="allSpots">
+              <span class="route-icon">📍</span>
+              <div class="route-info">
+                <strong>전체 명소</strong>
+                <small>영덕 주요 8대 스팟</small>
+              </div>
+            </button>
+          </div>
+
+          <!-- Interactive Leaflet Map Container -->
+          <div class="map-card-wrapper">
+            <div id="yeongdeokMap" class="map-view" aria-label="영덕 관광 인터랙티브 지도"></div>
+            <!-- Map Floating Info Badge -->
+            <div class="map-status-pill" id="mapStatusPill">
+              <span>💡 마커를 터치해 상세 정보와 길찾기를 확인하세요</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==============================================
+             [신규 핵심] 영덕 타보게 (관광택시) 전용 섹션
+             - 추천 코스 지도와 식후 스팟 사이에 배치
+             ============================================== -->
+        <section class="section taboge-section" id="tabogeSection">
+          <div class="taboge-card">
+            <!-- Header Tag -->
+            <div class="taboge-header-tag">
+              <span class="tag-taxi-brand">🚕 영덕군 60% 요금 지원</span>
+              <span class="tag-taxi-live">예약제 맞춤투어</span>
+            </div>
+
+            <!-- Title & Slogan -->
+            <div class="taboge-intro">
+              <div class="taboge-title-row">
+                <h2 class="taboge-title">대게 얹고 달리는 관광택시 <br><span class="highlight-taxi">「영덕 타보게」</span></h2>
+                <div class="taboge-crab-avatar">🦀</div>
+              </div>
+              <p class="taboge-subtext">
+                자가용 없이도 영덕 구석구석을 자유롭게! 영덕군과 문화관광재단이 <strong>총요금의 60%를 사후 지원</strong>하여 단 3만 원대로 편안하게 여행합니다.
+              </p>
+            </div>
+
+            <!-- 60% Discount Pricing Comparison Grid -->
+            <div class="taboge-pricing-box">
+              <div class="pricing-badge-bar">
+                <span>💰 파격적인 60% 군청 지원 요금표 (사후 환급)</span>
+              </div>
+              <div class="pricing-grid">
+                <div class="price-item active-tier">
+                  <span class="tier-name">3시간 알찬 코스</span>
+                  <div class="price-calc">
+                    <del class="price-orig">80,000원</del>
+                    <span class="price-discount-rate">60% 지원</span>
+                  </div>
+                  <strong class="price-final">32,000원</strong>
+                  <span class="price-benefit">군 지원금 48,000원</span>
+                </div>
+
+                <div class="price-item">
+                  <span class="tier-name">4시간 인기 코스</span>
+                  <div class="price-calc">
+                    <del class="price-orig">105,000원</del>
+                    <span class="price-discount-rate">60% 지원</span>
+                  </div>
+                  <strong class="price-final">42,000원</strong>
+                  <span class="price-benefit">군 지원금 63,000원</span>
+                </div>
+
+                <div class="price-item">
+                  <span class="tier-name">5시간 종일 코스</span>
+                  <div class="price-calc">
+                    <del class="price-orig">130,000원</del>
+                    <span class="price-discount-rate">60% 지원</span>
+                  </div>
+                  <strong class="price-final">52,000원</strong>
+                  <span class="price-benefit">군 지원금 78,000원</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Taboge 3 Core Merits -->
+            <div class="taboge-merits-list">
+              <div class="merit-item">
+                <span class="merit-icon">🧳</span>
+                <div class="merit-text">
+                  <strong>무거운 짐·캐리어 트렁크 보관</strong>
+                  <p>기차역(강구역·영덕역·영해역) 픽업부터 코스 내내 짐 부담 제로!</p>
+                </div>
+              </div>
+              <div class="merit-item">
+                <span class="merit-icon">🎙️</span>
+                <div class="merit-text">
+                  <strong>영덕 공인 베테랑 기사님의 로컬 해설</strong>
+                  <p>숨은 비경 안내, 인생 사진 촬영, 어르신 승하차 안심 케어</p>
+                </div>
+              </div>
+              <div class="merit-item">
+                <span class="merit-icon">🗺️</span>
+                <div class="merit-text">
+                  <strong>내 맘대로 짜는 100% 자유 코스</strong>
+                  <p>모노레일, 짚라인, 플라워팜, 해녀체험 등 원하는 스팟만 콕콕 이동</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action CTA Buttons -->
+            <div class="taboge-actions">
+              <button type="button" class="btn-taboge-main" id="btnTabogeDetailOpen">
+                🚕 타보게 코스 안내 & 택슐랭 맛집 보기
+              </button>
+              <button type="button" class="btn-taboge-sub" onclick="window.open('https://ydtaxi.imweb.me/', '_blank')">
+                🔗 타보게 공식 홈페이지 예약하기 ➔
+              </button>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==============================================
+             [섹션 3] 지금 내 주변 10분 동선 (체류 연장)
+             ============================================== -->
+        <section class="section nearby-section">
+          <div class="section-header">
+            <div class="title-with-badge">
+              <span class="badge-fire">🔥 체류 추천</span>
+              <h2 class="section-title">식사 후 바로 가기 좋은 주변 스팟</h2>
+            </div>
+            <p class="section-subtitle" id="nearbyDesc">강구항 대게 식사 후 바로 떠나기 아쉬울 때 도보 10분 코스!</p>
+          </div>
+
+          <div class="nearby-card-grid" id="nearbyCardsContainer">
+            <!-- Dynamic Nearby Cards injected by JS -->
+          </div>
+        </section>
+
+        <!-- ==============================================
+             [섹션 4] 타깃별 맞춤 코스 & 지도 연계 목록
+             ============================================== -->
+        <section class="section course-section">
+          <div class="section-header">
+            <h2 class="section-title">👨‍👩‍👧‍👦 누구와 함께 오셨나요?</h2>
+            <p class="section-subtitle">터치하시면 상세 소개와 함께 <strong>지도에서 위치를 바로 짚어드립니다.</strong></p>
+          </div>
+
+          <!-- Filter Chips -->
+          <div class="filter-chip-wrapper" role="tablist">
+            <button type="button" class="filter-chip active" data-filter="all">전체보기</button>
+            <button type="button" class="filter-chip" data-filter="experience">#이색체험·액티비티</button>
+            <button type="button" class="filter-chip" data-filter="healing">#부모님·중장년힐링</button>
+            <button type="button" class="filter-chip" data-filter="kids">#아이동반가족</button>
+            <button type="button" class="filter-chip" data-filter="festival">#시즌한정축제</button>
+          </div>
+
+          <!-- Course Cards Container -->
+          <div class="course-list" id="courseList">
+            <!-- Course items injected by JS -->
+          </div>
+        </section>
+
+        <!-- ==============================================
+             [섹션 5] 영덕 상생 패스 (소상공인 ESG 연계)
+             ============================================== -->
+        <section class="section pass-section">
+          <div class="section-header">
+            <h2 class="section-title">🎟️ 영덕 상생 패스 & 할인 혜택</h2>
+            <p class="section-subtitle">QR 관광객을 위한 지역 소상공인 제휴 할인과 공공 혜택</p>
+          </div>
+
+          <div class="pass-card-grid">
+            <!-- Pass 1: 디지털관광주민증 안내 -->
+            <div class="pass-card digital-pass" id="btnOpenDigitalPass">
+              <div class="pass-badge">지자체 공공 혜택</div>
+              <div class="pass-content">
+                <div class="pass-icon-box">🏛️</div>
+                <div class="pass-info">
+                  <h3 class="pass-title">영덕 디지털관광주민증</h3>
+                  <p class="pass-desc">사계 플라워 팜, 관어대 모노레일, 별파랑 짚라인 등 주요 체험·관광지 최대 10~20% 우대 할인</p>
+                </div>
+              </div>
+              <div class="pass-footer">
+                <span>발급 방법 및 제휴처 확인</span>
+                <span class="arrow-right">→</span>
+              </div>
+            </div>
+
+            <!-- Pass 2: 로컬 소상공인 상생 쿠폰 -->
+            <div class="pass-card coupon-pass" id="btnOpenCoupon">
+              <div class="pass-badge highlight">현장 즉시 할인</div>
+              <div class="pass-content">
+                <div class="pass-icon-box">🏷️</div>
+                <div class="pass-info">
+                  <h3 class="pass-title">로컬 소상공인 10% 쿠폰</h3>
+                  <p class="pass-desc">제휴 카페, 베이커리, 체험공방 현장에서 제시하면 즉시 10% 할인</p>
+                </div>
+              </div>
+              <div class="pass-footer">
+                <span>모바일 바코드 쿠폰 열기</span>
+                <span class="arrow-right">→</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Footer Info -->
+        <footer class="app-footer">
+          <p class="footer-title">영덕 나우 (YEONGDEOK NOW) | 지역 상생 관광 플랫폼</p>
+          <p class="footer-text">별도의 앱 설치나 회원가입 없이 스마트폰 QR코드로 즉시 이용하는 오픈 웹 가이드입니다. 영덕군 관광과, 영덕문화관광재단 및 지역 소상공인과의 상생을 추구합니다.</p>
+          <div class="footer-tags">
+            <span>#영덕타보게</span>
+            <span>#퐁당자무질</span>
+            <span>#별파랑짚라인</span>
+            <span>#관어대모노레일</span>
+            <span>#사계플라워팜</span>
+          </div>
+        </footer>
+
+      </div> <!-- // app-body -->
+
+      <!-- ==============================================
+           [하단 고정 플로팅 바] 영덕타보게 바로가기
+           ============================================== -->
+      <aside class="floating-bottom-bar">
+        <div class="floating-inner">
+          <div class="floating-text-wrap">
+            <span class="floating-icon">🚕</span>
+            <div class="floating-desc">
+              <strong class="floating-title">영덕 타보게 (60% 지원)</strong>
+              <span class="floating-sub">3시간 3만2천원 맞춤 투어</span>
+            </div>
+          </div>
+          <button type="button" class="btn-floating-action" id="btnOpenTaxiModal">
+            타보게 & 택슐랭 보기
+          </button>
+        </div>
+      </aside>
+
+    </main> <!-- // app-container -->
+  </div> <!-- // desktop-background -->
+
+
+  <!-- ==============================================
+       MODALS (상세 팝업)
+       ============================================== -->
+
+  <!-- 1. 스팟 상세 & 지도 연동 모달 (가독성 극대화) -->
+  <div class="modal-overlay" id="modalDetail" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title" id="detailTitle">스팟 상세안내</h3>
+        <button type="button" class="btn-close-modal" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body" id="detailBody">
+        <!-- Injected via JS -->
+      </div>
+      <div class="modal-footer">
+        <div class="modal-action-btns">
+          <button type="button" class="btn-primary full-width" id="btnFocusOnMap">
+            🗺️ 홈페이지 지도에서 위치 보기
+          </button>
+          <button type="button" class="btn-secondary full-width" id="btnExternalNavi">
+            📍 카카오·네이버 지도 앱으로 길찾기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 영덕타보게 관광택시 상세 & 예약 안내 모달 -->
+  <div class="modal-overlay" id="modalTaxi" role="dialog" aria-modal="true" aria-labelledby="taxiTitle">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title" id="taxiTitle">🚕 영덕 타보게 관광택시 & 택슐랭</h3>
+        <button type="button" class="btn-close-modal" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-callout bg-taxi">
+          <strong>영덕군 60% 요금 지원 맞춤형 관광택시</strong>
+          <p>공인 베테랑 기사님이 원하는 코스를 편안하게 운행하며 숨은 비경 해설과 짐 보관, 맛집 추천까지 함께합니다.</p>
+        </div>
+
+        <h4 class="modal-section-heading">📋 이용 요금표 (군청 60% 사후 환급 지원)</h4>
+        <div class="taxi-pricing-card">
+          <div class="pricing-row">
+            <span class="course-name">3시간 알찬 코스</span>
+            <span class="price-highlight">32,000원 <small>(정상가 80,000원)</small></span>
+          </div>
+          <p class="pricing-detail">기차역/강구항 ➔ 메타세콰이어숲 ➔ 사계플라워팜 ➔ 복귀</p>
+          <div class="pricing-divider"></div>
+          <div class="pricing-row">
+            <span class="course-name">4시간 추천 코스</span>
+            <span class="price-highlight">42,000원 <small>(정상가 105,000원)</small></span>
+          </div>
+          <p class="pricing-detail">해파랑공원 ➔ 별파랑 짚라인 ➔ 퐁당자무질(해녀체험) ➔ 해맞이공원</p>
+          <div class="pricing-divider"></div>
+          <div class="pricing-row">
+            <span class="course-name">5시간 종일 코스</span>
+            <span class="price-highlight">52,000원 <small>(정상가 130,000원)</small></span>
+          </div>
+          <p class="pricing-detail">영덕 전역 자유 코스 (관어대 모노레일 + 고래불 + 이색체험 자유 조합)</p>
+        </div>
+
+        <div class="step-guide">
+          <h4>📱 타보게 예약 및 이용 절차</h4>
+          <ol>
+            <li><strong>사전 예약:</strong> '영덕 타보게' 공식 홈페이지(ydtaxi.imweb.me)에서 최소 3일 전 신청</li>
+            <li><strong>현장 이용:</strong> 배차된 기사님과 편안하게 여행 후 현장 결제</li>
+            <li><strong>60% 환급 신청:</strong> 여행 완료 후 10일 내 영수증 및 인증샷 제출 시 본인 통장으로 60% 환급!</li>
+          </ol>
+        </div>
+
+        <h4 class="modal-section-heading">⭐ 기사님 픽 찐 로컬 맛집 [택슐랭 TOP 3]</h4>
+        <div class="taxichelin-list">
+          <div class="taxichelin-item">
+            <span class="rank-badge">1</span>
+            <div class="taxichelin-info">
+              <strong>영해 만세시장 원조 물회·장터국밥</strong>
+              <span>"대게 말고 현지 어부들이 아침마다 찾는 100년 전통 찐 로컬 맛집"</span>
+            </div>
+          </div>
+          <div class="taxichelin-item">
+            <span class="rank-badge">2</span>
+            <div class="taxichelin-info">
+              <strong>축산항 가자미 찌개 & 미역국 전문점</strong>
+              <span>"깊고 시원한 육수로 부모님 모시고 가면 백발백중 칭찬받는 곳"</span>
+            </div>
+          </div>
+          <div class="taxichelin-item">
+            <span class="rank-badge">3</span>
+            <div class="taxichelin-info">
+              <strong>강구면 로컬 해물칼국수 & 파전</strong>
+              <span>"푸짐한 해물과 탁 트인 바다 전망을 부담 없이 즐기는 별미"</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-primary full-width" onclick="window.open('https://ydtaxi.imweb.me/', '_blank')">🌐 타보게 공식 홈페이지 예약 바로가기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 디지털관광주민증 모달 -->
+  <div class="modal-overlay" id="modalDigitalPass" role="dialog" aria-modal="true" aria-labelledby="digitalPassTitle">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title" id="digitalPassTitle">🏛️ 영덕 디지털관광주민증 안내</h3>
+        <button type="button" class="btn-close-modal" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-callout">
+          <strong>디지털관광주민증이란?</strong>
+          <p>한국관광공사와 영덕군이 함께 발급하는 일종의 '명예 군민증'으로, 스마트폰으로 간편하게 발급받아 관내 주요 관광지와 카페, 체험농장에서 할인 혜택을 받는 제도입니다.</p>
+        </div>
+
+        <h4 class="modal-section-heading">✨ 주요 체험 및 관광지 할인 혜택</h4>
+        <ul class="benefit-list">
+          <li>
+            <span class="benefit-tag">원예체험</span>
+            <div class="benefit-details">
+              <strong>사계 플라워 팜</strong>
+              <span>체험 참여 시 메리골드 수제 꽃차 무료 제공</span>
+            </div>
+          </li>
+          <li>
+            <span class="benefit-tag">액티비티</span>
+            <div class="benefit-details">
+              <strong>별파랑 짚라인 & 신재생에너지전시관</strong>
+              <span>이용료 및 입장료 20% 우대 할인</span>
+            </div>
+          </li>
+          <li>
+            <span class="benefit-tag">전망시설</span>
+            <div class="benefit-details">
+              <strong>상대산 관어대 모노레일</strong>
+              <span>탑승료 현장 감면 우대</span>
+            </div>
+          </li>
+          <li>
+            <span class="benefit-tag">로컬카페</span>
+            <div class="benefit-details">
+              <strong>영덕 관내 지정 제휴 카페 12개소</strong>
+              <span>음료 10% 할인 또는 사이즈업</span>
+            </div>
+          </li>
+        </ul>
+
+        <div class="step-guide">
+          <h4>📱 1분 간편 발급 절차</h4>
+          <ol>
+            <li>'대한민국 구석구석' 웹사이트/앱 접속</li>
+            <li>디지털관광주민증 메뉴에서 '영덕군' 선택</li>
+            <li>본인 인증 후 모바일 주민증 즉시 발급 완료!</li>
+          </ol>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-primary full-width" onclick="window.open('https://korean.visitkorea.or.kr', '_blank')">한국관광공사 발급 공식 페이지 열기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 로컬 소상공인 상생 쿠폰 모달 -->
+  <div class="modal-overlay" id="modalCoupon" role="dialog" aria-modal="true" aria-labelledby="couponTitle">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title" id="couponTitle">🏷️ 영덕 나우 QR제휴 상생 쿠폰</h3>
+        <button type="button" class="btn-close-modal" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body text-center">
+        <!-- Coupon Card Ticket Graphic -->
+        <div class="coupon-ticket">
+          <div class="ticket-top">
+            <span class="ticket-brand">YEONGDEOK LOCAL ESG PASS</span>
+            <div class="ticket-discount">10% OFF</div>
+            <p class="ticket-name">영덕 로컬 소상공인 제휴 즉시할인권</p>
+          </div>
+          <div class="ticket-divider">
+            <span class="circle-notch left"></span>
+            <span class="dashed-line"></span>
+            <span class="circle-notch right"></span>
+          </div>
+          <div class="ticket-bottom">
+            <div class="barcode-visual">
+              <div class="barcode-lines"></div>
+              <span class="barcode-number">YD-NOW-2026-8894</span>
+            </div>
+            <p class="ticket-notice">결제 전 점원에게 이 화면을 보여주시면 즉시 할인됩니다.</p>
+            <div class="coupon-status" id="couponStatus">
+              <span class="status-badge valid">사용 가능</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Button for Shop Staff Simulation -->
+        <button type="button" class="btn-redeem" id="btnRedeemCoupon">
+          [매장 직원 확인] 터치하여 사용 처리
+        </button>
+
+        <div class="coupon-affiliates">
+          <h4>📍 본 쿠폰 사용 가능 매장 (상시 업데이트)</h4>
+          <div class="affiliate-tags">
+            <span>☕ 해파랑 오션뷰 카페 '파도'</span>
+            <span>🥐 영덕 복숭아 베이커리</span>
+            <span>🌸 사계 플라워 팜 원예공방</span>
+            <span>🎨 영해장터거리 조개공방</span>
+            <span>🍵 괴시리 한옥 찻집</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary full-width btn-close-modal-footer">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Message -->
+  <div class="toast-message" id="toastMessage">안내 메시지</div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Main JavaScript File -->
+  <script src="script.js"></script>
+</body>
+</html>
